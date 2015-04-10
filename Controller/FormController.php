@@ -81,11 +81,14 @@ class FormController extends Controller
     {
         $em = $this->getDoctrine();
 
+        // dump($id);
+
         if (is_numeric($id)) {
             $object = $this->container->getParameter('opifer_eav.nestable_class');
             $entity = $em->getRepository($object)->find($id);
             $template = $entity->getTemplate();
         } else {
+
             $template = $this->get('opifer.eav.template_manager')->getRepository()->find($request->get('template'));
 
             if (!$template) {
@@ -95,6 +98,8 @@ class FormController extends Controller
             $entity = $this->get('opifer.eav.eav_manager')->initializeEntity($template);
             $id = $template->getName();
         }
+
+        // dump($template);
 
         //In case of newly added nested content, we need to add an index
         //to the form type name, to avoid same template name conflicts.
@@ -109,6 +114,8 @@ class FormController extends Controller
         $form = $this->render('OpiferEavBundle:Form:render.html.twig', ['form' => $form->createView()]);
 
         $entity = $this->get('jms_serializer')->serialize($entity, 'json');
+        // dump($id);
+        // dump($test);
 
         return new JsonResponse([
             'form'    => $form->getContent(),
