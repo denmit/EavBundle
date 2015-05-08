@@ -114,3 +114,9 @@ services:
         arguments: [@form.factory, @opifer.eav.eav_manager]
         tags:
             - { name: twig.extension }
+    
+    # Serializer
+    opifer.eav.handler.serialization:
+        class: Opifer\EavBundle\EventListener\Serializer\FormEventSubscriber
+        tags:
+            - { name: jms_serializer.event_subscriber }

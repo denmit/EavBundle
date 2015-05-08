@@ -110,10 +110,12 @@ class FormController extends Controller
 
         $key = $this->get('opifer.eav.eav_manager')
             ->generateNestedTypeName($attribute, $id, $index, $request->get('parent'));
-
+        
         $form = $this->createForm(new NestedType($key), $entity);
         $form = $this->render('OpiferEavBundle:Form:render.html.twig', ['form' => $form->createView()]);
-
+        
+        $this->_setValueSetForm($entity, $key);
+        
         $entity = $this->get('jms_serializer')->serialize($entity, 'json');
 
         return new JsonResponse([
@@ -121,5 +123,34 @@ class FormController extends Controller
             'content' => json_decode($entity, true),
             'name'    => $id
         ]);
+    }
+    
+    private function _setValueSetForm(&$entity, $key)
+    {
+        $i = 0;
+        
+        foreach ($entity->getValueSet()->getValues() as &$value) {
+            switch (get_class($value)) {
+                case 'Opifer\EavBundle\Entity\NestedValue':
+                    foreach($value->getValue() as &$content) {
+                    
+                        $attribute = $value->getAttribute()->getName();
+                        $id = $content->getId();
+                        
+                        $parent = $key . '_valueset_namedvalues_' . $attribute;
+                        $nestedKey = $this->get('opifer.eav.eav_manager')
+                            ->generateNestedTypeName($attribute, $id, $i, $parent);
+                        
+                        $_form = $this->createForm(new NestedType($nestedKey), $content);
+                        $_form = $this->render('OpiferEavBundle:Form:render.html.twig', ['form' => $_form->createView()]);
+                        
+                        $content->_form = $_form->getContent();
+                        $this->_setValueSetForm($content, $nestedKey);
+                        $i++;
+                    }
+                    break;
+                default:
+            }
+        }
     }
 }

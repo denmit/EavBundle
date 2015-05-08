@@ -6,7 +6,7 @@ angular.module('OpiferNestedContent', ['ui.sortable'])
      */
     .factory('TemplateService', ['$resource', function($resource) {
         return $resource(Routing.generate('opifer_eav_api_template'), {}, {
-            index: {method: 'GET', isArray: true, params: {}}
+            index: {method: 'GET', isArray: true, params: {}, cache: true}
         });
     }])
 
@@ -101,27 +101,40 @@ angular.module('OpiferNestedContent', ['ui.sortable'])
                 if (angular.isUndefined(scope.$parent.$parent.subject)) {
                     var parent = '';
                 } else {
+                    var nested_data = scope.$parent.$parent.subject.data.pivotedAttributes[scope.attribute][scope.$index];
+                    var new_nested = false;
+                    
+                    if(nested_data && typeof nested_data._form != 'undefined') {
+                        scope.subject.form = nested_data._form;
+                        scope.subject.data = nested_data;
+                        scope.subject.name = nested_data.id;
+                    } else {
+                        new_nested = true;
+                    }
+                    
                     var parent = element.parent().parent().parent().find('input')[0].name;
                 }
 
                 // Request the form template and compile it
-                $http.post(Routing.generate('opifer_eav_form_render', {
-                    attribute: scope.attribute,
-                    id: scope.subject.name,
-                    index: scope.$index,
-                    parent: parent,
-                    template: scope.subject.id
-                }), {}).success(function(data) {
-                    scope.subject.form = data.form;
-                    scope.subject.data = data.content;
-                    scope.subject.name = data.name;
+                if(!parent || new_nested) {
+                    $http.post(Routing.generate('opifer_eav_form_render', {
+                        attribute: scope.attribute,
+                        id: scope.subject.name,
+                        index: scope.$index,
+                        parent: parent,
+                        template: scope.subject.id
+                    }), {}).success(function(data) {
+                        scope.subject.form = data.form;
+                        scope.subject.data = data.content;
+                        scope.subject.name = data.name;
 
-                    // If the subject's name is not an ID, it means it's a new nested content
-                    // form, so don't hide it.
-                    if (isNaN(parseFloat(scope.subject.name)) || !isFinite(scope.subject.name)) {
-                        scope.hidden = false;
-                    }
-                });
+                        // If the subject's name is not an ID, it means it's a new nested content
+                        // form, so don't hide it.
+                        if (isNaN(parseFloat(scope.subject.name)) || !isFinite(scope.subject.name)) {
+                            scope.hidden = false;
+                        }
+                    });
+                }
 
                 // Hide/Show the nested content form
                 scope.toggle = function() {
